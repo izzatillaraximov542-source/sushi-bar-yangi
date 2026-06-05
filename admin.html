@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Sushi Bar</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.294.0"
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-neutral-50">
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Plus, Trash2, Save, Image as ImageIcon } from 'lucide-react';
+
+    // Image compression helper to stay within localStorage limits (and reduce network payload)
+    const compressImage = (file, callback) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 600;
+          const MAX_HEIGHT = 600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          callback(dataUrl);
+        };
+      };
+    };
+
+    const defaultCategories = ["Barchasi", "Roll va Sushilar", "Katta Setlar", "Issiq Taomlar", "Salatlar", "Ichimliklar"];
+    const defaultMenuItems = [
+      { id: 1, name: "Filadelfiya Klassik", category: "Roll va Sushilar", price: 75000, weight: "250 g / 8 dona", desc: "Norvegiya lososi, qaymoqli pishloq, bodring, nori va guruch.", img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80" },
+      { id: 2, name: "Tokio Seti", category: "Katta Setlar", price: 320000, weight: "1200 g / 40 dona", desc: "Eng mashhur 5 xil rollar to'plami: Filadelfiya, Kaliforniya, Alyaska, va boshqalar.", img: "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=600&q=80" },
+      { id: 3, name: "Issiq Ebi Tempura", category: "Roll va Sushilar", price: 85000, weight: "280 g / 8 dona", desc: "Qarsildoq tempura ichida qisqichbaqa, pishloq va unagi sousi.", img: "https://images.unsplash.com/photo-1615361200141-f45040f367be?auto=format&fit=crop&w=600&q=80" },
+      { id: 4, name: "Chuka Salati", category: "Salatlar", price: 45000, weight: "150 g", desc: "Dengiz o'tlari salati, yong'oqli sous va kunjut bilan.", img: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80" },
+      { id: 5, name: "Tomyam Sho'rvasi", category: "Issiq Taomlar", price: 95000, weight: "400 ml", desc: "Tailandcha achchiq va nordon sho'rva dengiz mahsulotlari bilan.", img: "https://images.unsplash.com/photo-1548943487-a2e4f43b485d?auto=format&fit=crop&w=600&q=80" },
+      { id: 6, name: "Yaponcha Choy", category: "Ichimliklar", price: 25000, weight: "500 ml", desc: "An'anaviy sencha ko'k choyi, limon va yalpiz bilan.", img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&q=80" },
+    ];
+
+    function AdminApp() {
+      const [categories, setCategories] = useState(defaultCategories);
+      const [menuItems, setMenuItems] = useState(defaultMenuItems);
+
+      const [newCategory, setNewCategory] = useState("");
+      const [newItem, setNewItem] = useState({ name: "", category: "Roll va Sushilar", price: "", weight: "", desc: "", img: "" });
+
+      const fetchData = async () => {
+        try {
+          const [catRes, menuRes] = await Promise.all([
+            fetch('/api/categories'),
+            fetch('/api/menu')
+          ]);
+          if (catRes.ok && menuRes.ok) {
+            const cats = await catRes.json();
+            const items = await menuRes.json();
+            setCategories(cats);
+            setMenuItems(items);
+          }
+        } catch (error) {
+          console.error("Ma'lumotlarni serverdan olishda xatolik:", error);
+        }
+      };
+
+      useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 3000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          compressImage(file, (base64Str) => {
+            setNewItem(prev => ({ ...prev, img: base64Str }));
+          });
+        }
+      };
+
+      const formatPrice = (price) => new Intl.NumberFormat('uz-UZ').format(price) + " UZS";
+
+      const handleAddCategory = async () => {
+        if (newCategory.trim()) {
+          try {
+            const res = await fetch('/api/categories', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: newCategory.trim() })
+            });
+            if (res.ok) {
+              const updatedCats = await res.json();
+              setCategories(updatedCats);
+              setNewCategory("");
+            } else {
+              const err = await res.json();
+              alert(err.error || "Xatolik yuz berdi.");
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      };
+
+      const handleDeleteCategory = async (cat) => {
+        try {
+          const res = await fetch(`/api/categories/${encodeURIComponent(cat)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            const updatedCats = await res.json();
+            setCategories(updatedCats);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const handleAddItem = async () => {
+        if (newItem.name && newItem.price) {
+          try {
+            const res = await fetch('/api/menu', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: newItem.name,
+                category: newItem.category,
+                price: Number(newItem.price),
+                weight: newItem.weight || "",
+                desc: newItem.desc || "Yangi taom...",
+                img: newItem.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"
+              })
+            });
+            if (res.ok) {
+              await fetchData();
+              setNewItem({ name: "", category: categories.filter(c => c !== "Barchasi")[0] || "Taomlar", price: "", weight: "", desc: "", img: "" });
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      };
+
+      const handleDeleteItem = async (id) => {
+        try {
+          const res = await fetch(`/api/menu/${id}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            await fetchData();
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-neutral-50 font-sans max-w-md mx-auto shadow-2xl relative pb-20">
+          <div className="bg-white px-5 py-6 sticky top-0 z-20 shadow-sm flex items-center justify-between">
+            <h1 className="text-2xl font-black text-neutral-900 tracking-tight">Admin Panel</h1>
+            <a href="./index.html" className="text-sm font-bold text-amber-500 hover:text-amber-600 transition-colors">
+              Menyuga qaytish
+            </a>
+          </div>
+
+          <div className="p-5 space-y-8">
+            <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
+              <h2 className="font-bold text-lg mb-4 text-neutral-800">Kategoriyalar</h2>
+              <div className="flex gap-2 mb-4">
+                <input 
+                  type="text" 
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="Yangi kategoriya"
+                  className="flex-1 bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 transition-all text-sm"
+                />
+                <button onClick={handleAddCategory} className="bg-neutral-900 text-white px-4 rounded-xl hover:bg-neutral-800 transition-colors">
+                  <Plus size={20} />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {categories.filter(c => c !== "Barchasi").map(cat => (
+                  <div key={cat} className="flex items-center gap-2 bg-neutral-100 px-3 py-1.5 rounded-lg text-sm font-medium">
+                    <span>{cat}</span>
+                    <button onClick={() => handleDeleteCategory(cat)} className="text-red-500 hover:bg-red-50 p-1 rounded-md transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
+              <h2 className="font-bold text-lg mb-4 text-neutral-800">Taom Qo'shish</h2>
+              <div className="space-y-3">
+                <input 
+                  type="text" 
+                  placeholder="Taom nomi" 
+                  value={newItem.name}
+                  onChange={e => setNewItem({...newItem, name: e.target.value})}
+                  className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm"
+                />
+                <div className="flex gap-3">
+                  <input 
+                    type="number" 
+                    placeholder="Narxi (UZS)" 
+                    value={newItem.price}
+                    onChange={e => setNewItem({...newItem, price: e.target.value})}
+                    className="w-1/2 bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm"
+                  />
+                  <select 
+                    value={newItem.category}
+                    onChange={e => setNewItem({...newItem, category: e.target.value})}
+                    className="w-1/2 bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm border-r-8 border-transparent"
+                  >
+                    {categories.filter(c => c !== "Barchasi").map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Og'irligi/Miqdori (masalan: 250 g / 8 dona)" 
+                  value={newItem.weight}
+                  onChange={e => setNewItem({...newItem, weight: e.target.value})}
+                  className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm"
+                />
+                <textarea 
+                  placeholder="Ta'rifi..." 
+                  value={newItem.desc}
+                  onChange={e => setNewItem({...newItem, desc: e.target.value})}
+                  className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm min-h-[80px]"
+                />
+                
+                <div className="space-y-2">
+                  <label className="text-xs text-neutral-500 font-semibold block">Rasm yuklash yoki URL</label>
+                  <div className="flex items-center gap-3">
+                    <label className="bg-neutral-100 px-4 py-3 rounded-xl cursor-pointer hover:bg-neutral-200 transition-colors flex-1 flex items-center gap-2">
+                      <ImageIcon size={20} className="text-neutral-500" />
+                      <span className="text-sm font-bold text-neutral-600">Rasm tanlash</span>
+                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    </label>
+                    {newItem.img && (
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-neutral-200">
+                        <img src={newItem.img} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setNewItem({...newItem, img: ""})} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Yoki rasm manzili (URL)..." 
+                    value={(newItem.img || "").startsWith('data:image') ? '' : newItem.img}
+                    onChange={e => setNewItem({...newItem, img: e.target.value})}
+                    className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm"
+                  />
+                </div>
+
+                <button 
+                  onClick={handleAddItem}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-colors mt-2"
+                >
+                  <Save size={20} />
+                  Saqlash
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
+              <h2 className="font-bold text-lg mb-4 text-neutral-800">Menyudagi Taomlar</h2>
+              <div className="space-y-3">
+                {menuItems.map(item => (
+                  <div key={item.id} className="flex gap-3 items-center border-b border-neutral-100 pb-3 last:border-0 last:pb-0">
+                    <img src={item.img} alt={item.name} className="w-14 h-14 rounded-lg object-cover" />
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-neutral-900 line-clamp-1">{item.name}</h4>
+                      <p className="text-xs text-neutral-500">{formatPrice(item.price)} • {item.category}</p>
+                    </div>
+                    <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors shrink-0">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+                {menuItems.length === 0 && (
+                  <p className="text-sm text-neutral-500 text-center py-4">Menyuda taomlar yo'q</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<AdminApp />);
+  </script>
+</body>
+</html>

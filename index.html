@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sushi Bar</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Import Map for React and Lucide -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.294.0"
+      }
+    }
+  </script>
+
+  <!-- Babel for parsing JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#0a0a0a]">
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useMemo } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { ShoppingCart, Plus, Minus, ChevronLeft, Search, MapPin, Phone, User, X } from 'lucide-react';
+
+    // --- MA'LUMOTLAR BAZASI ---
+    const defaultCategories = ["Barchasi", "Roll va Sushilar", "Katta Setlar", "Issiq Taomlar", "Salatlar", "Ichimliklar"];
+
+    const defaultMenuItems = [
+      { 
+        id: 1, 
+        name: "Filadelfiya Klassik", 
+        category: "Roll va Sushilar", 
+        price: 75000, 
+        weight: "250 g / 8 dona",
+        desc: "Norvegiya lososi, qaymoqli pishloq, bodring, nori va guruch.", 
+        img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80" 
+      },
+      { 
+        id: 2, 
+        name: "Tokio Seti", 
+        category: "Katta Setlar", 
+        price: 320000, 
+        weight: "1200 g / 40 dona",
+        desc: "Eng mashhur 5 xil rollar to'plami: Filadelfiya, Kaliforniya, Alyaska, va boshqalar.", 
+        img: "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=600&q=80" 
+      },
+      { 
+        id: 3, 
+        name: "Issiq Ebi Tempura", 
+        category: "Roll va Sushilar", 
+        price: 85000, 
+        weight: "280 g / 8 dona",
+        desc: "Qarsildoq tempura ichida qisqichbaqa, pishloq va unagi sousi.", 
+        img: "https://images.unsplash.com/photo-1615361200141-f45040f367be?auto=format&fit=crop&w=600&q=80" 
+      },
+      { 
+        id: 4, 
+        name: "Chuka Salati", 
+        category: "Salatlar", 
+        price: 45000, 
+        weight: "150 g",
+        desc: "Dengiz o'tlari salati, yong'oqli sous va kunjut bilan.", 
+        img: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80" 
+      },
+      { 
+        id: 5, 
+        name: "Tomyam Sho'rvasi", 
+        category: "Issiq Taomlar", 
+        price: 95000, 
+        weight: "400 ml",
+        desc: "Tailandcha achchiq va nordon sho'rva dengiz mahsulotlari bilan.", 
+        img: "https://images.unsplash.com/photo-1548943487-a2e4f43b485d?auto=format&fit=crop&w=600&q=80" 
+      },
+      { 
+        id: 6, 
+        name: "Yaponcha Choy", 
+        category: "Ichimliklar", 
+        price: 25000, 
+        weight: "500 ml",
+        desc: "An'anaviy sencha ko'k choyi, limon va yalpiz bilan.", 
+        img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&q=80" 
+      },
+    ];
+
+    function SushiBarApp() {
+      // --- STATE ---
+      const [categories, setCategories] = useState(defaultCategories);
+      const [menuItems, setMenuItems] = useState(defaultMenuItems);
+
+      const fetchData = async () => {
+        try {
+          const [catRes, menuRes] = await Promise.all([
+            fetch('/api/categories'),
+            fetch('/api/menu')
+          ]);
+          if (catRes.ok && menuRes.ok) {
+            const cats = await catRes.json();
+            const items = await menuRes.json();
+            setCategories(cats);
+            setMenuItems(items);
+          }
+        } catch (error) {
+          console.error("Ma'lumotlarni serverdan olishda xatolik:", error);
+        }
+      };
+
+      useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 3000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const [activePage, setActivePage] = useState('menu'); // 'menu' yoki 'checkout'
+      const [activeCategory, setActiveCategory] = useState("Barchasi");
+      const [searchQuery, setSearchQuery] = useState("");
+      const [cart, setCart] = useState({});
+
+      // Yordamchi funksiyalar
+      const formatPrice = (price) => new Intl.NumberFormat('uz-UZ').format(price) + " UZS";
+
+      const addToCart = (item) => {
+        setCart(prev => ({
+          ...prev,
+          [item.id]: { ...item, quantity: prev[item.id] ? prev[item.id].quantity + 1 : 1 }
+        }));
+      };
+
+      const removeFromCart = (itemId) => {
+        setCart(prev => {
+          const newCart = { ...prev };
+          if (newCart[itemId].quantity > 1) {
+            newCart[itemId].quantity -= 1;
+          } else {
+            delete newCart[itemId];
+          }
+          return newCart;
+        });
+      };
+
+      const cartTotal = Object.values(cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const cartItemsCount = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+
+      // Qidiruv va filtr
+      const filteredItems = useMemo(() => {
+        return menuItems.filter(item => {
+          const matchCat = activeCategory === "Barchasi" || item.category === activeCategory;
+          const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchCat && matchSearch;
+        });
+      }, [activeCategory, searchQuery, menuItems]);
+
+      // ==========================================
+      // SAHIFA 2: SAVAT VA RASMIYLASHTIRISH
+      // ==========================================
+      if (activePage === 'checkout') {
+        return (
+          <div className="min-h-screen bg-[#0a0a0a] text-white font-sans pb-24">
+            {/* Header */}
+            <div className="bg-[#141414] border-b border-neutral-800 sticky top-0 z-20 px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setActivePage('menu')} className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 transition">
+                  <ChevronLeft size={20} />
+                </button>
+                <h1 className="text-xl font-bold tracking-wide">Buyurtmani rasmiylashtirish</h1>
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 p-4 mt-4">
+              
+              {/* Chap ustun: Savatdagi mahsulotlar */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-neutral-300 border-b border-neutral-800 pb-2">Sizning buyurtmangiz</h2>
+                
+                {Object.keys(cart).length === 0 ? (
+                  <p className="text-neutral-500 py-4">Savatingiz bo'sh. Menyudan taom tanlang.</p>
+                ) : (
+                  Object.values(cart).map(item => (
+                    <div key={item.id} className="bg-[#141414] p-3 rounded-xl flex gap-4 items-center border border-neutral-800">
+                      <img src={item.img} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm md:text-base">{item.name}</h3>
+                        <p className="text-[#e63946] font-bold mt-1">{formatPrice(item.price)}</p>
+                      </div>
+                      <div className="flex items-center gap-3 bg-[#1f1f1f] rounded-lg p-1">
+                        <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center bg-neutral-800 rounded text-neutral-300 hover:text-white">
+                          <Minus size={16} />
+                        </button>
+                        <span className="font-medium text-sm w-4 text-center">{item.quantity}</span>
+                        <button onClick={() => addToCart(item)} className="w-8 h-8 flex items-center justify-center bg-neutral-800 rounded text-neutral-300 hover:text-white">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {cartItemsCount > 0 && (
+                  <div className="bg-[#141414] p-4 rounded-xl border border-neutral-800 flex justify-between items-center mt-4">
+                    <span className="text-neutral-400">Jami to'lov:</span>
+                    <span className="text-2xl font-bold text-white">{formatPrice(cartTotal)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* O'ng ustun: Mijoz ma'lumotlari shakli (Form) */}
+              <div className="bg-[#141414] p-6 rounded-2xl border border-neutral-800 h-fit">
+                <h2 className="text-lg font-semibold text-neutral-300 border-b border-neutral-800 pb-2 mb-6">Yetkazib berish ma'lumotlari</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-neutral-400 mb-1 block">Ismingiz</label>
+                    <div className="flex items-center bg-[#0a0a0a] rounded-xl border border-neutral-800 px-3 py-3 focus-within:border-[#e63946] transition-colors">
+                      <User size={18} className="text-neutral-500 mr-3" />
+                      <input type="text" placeholder="Ismingizni kiriting" className="bg-transparent w-full outline-none text-white text-sm" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm text-neutral-400 mb-1 block">Telefon raqamingiz</label>
+                    <div className="flex items-center bg-[#0a0a0a] rounded-xl border border-neutral-800 px-3 py-3 focus-within:border-[#e63946] transition-colors">
+                      <Phone size={18} className="text-neutral-500 mr-3" />
+                      <input type="tel" placeholder="+998 90 123 45 67" className="bg-transparent w-full outline-none text-white text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-neutral-400 mb-1 block">Manzil (Ko'cha, uy)</label>
+                    <div className="flex items-center bg-[#0a0a0a] rounded-xl border border-neutral-800 px-3 py-3 focus-within:border-[#e63946] transition-colors">
+                      <MapPin size={18} className="text-neutral-500 mr-3" />
+                      <input type="text" placeholder="Toshkent sh., Yunusobod..." className="bg-transparent w-full outline-none text-white text-sm" />
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      alert("Buyurtmangiz qabul qilindi! Tez orada aloqaga chiqamiz.");
+                      setCart({});
+                      setActivePage('menu');
+                    }}
+                    disabled={cartItemsCount === 0}
+                    className={`w-full py-4 mt-6 rounded-xl font-bold text-lg transition-all ${
+                      cartItemsCount > 0 
+                      ? "bg-[#e63946] text-white hover:bg-red-700 shadow-[0_0_15px_rgba(230,57,70,0.4)]" 
+                      : "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                    }`}
+                  >
+                    Buyurtmani tasdiqlash
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // SAHIFA 1: ASOSIY MENYU
+      // ==========================================
+      return (
+        <div className="min-h-screen bg-[#0a0a0a] text-white font-sans pb-24">
+          {/* Header / Navbar */}
+          <div className="bg-[#141414] border-b border-neutral-800 sticky top-0 z-20">
+            <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <img src="./logo.png" alt="Sushi Bar" className="w-10 h-10 rounded-full object-cover" />
+                <span className="font-bold text-xl uppercase tracking-widest hidden sm:block">Sushi Bar</span>
+              </div>
+              
+              <button 
+                onClick={() => setActivePage('checkout')}
+                className="relative flex items-center gap-2 bg-[#1f1f1f] hover:bg-neutral-800 px-4 py-2 rounded-lg transition border border-neutral-800"
+              >
+                <ShoppingCart size={20} className="text-[#e63946]" />
+                <span className="font-medium">{formatPrice(cartTotal)}</span>
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-[#e63946] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Kategoriyalar (Evrasia style horizontal menu) */}
+            <div className="border-t border-neutral-800 bg-[#0f0f0f]">
+              <div className="max-w-6xl mx-auto flex overflow-x-auto hide-scrollbar px-4 py-3 gap-6">
+                {categories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`whitespace-nowrap pb-1 text-sm md:text-base font-medium transition-colors border-b-2 ${
+                      activeCategory === category 
+                        ? "text-[#e63946] border-[#e63946]" 
+                        : "text-neutral-400 border-transparent hover:text-white"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Asosiy Qism */}
+          <div className="max-w-6xl mx-auto px-4 pt-6">
+            
+            {/* Qidiruv Qismi */}
+            <div className="relative mb-8 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search size={18} className="text-neutral-500" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-12 pr-10 py-3 bg-[#141414] border border-neutral-800 rounded-xl focus:border-[#e63946] outline-none text-white text-sm transition-colors"
+                placeholder="Menyudan qidirish..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-500 hover:text-white">
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Kategoriya Sarlavhasi */}
+            <h2 className="text-2xl font-bold mb-6 text-white">{activeCategory}</h2>
+
+            {/* Taomlar Grid'i (Katalog) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredItems.length > 0 ? (
+                filteredItems.map(item => {
+                  const quantityInCart = cart[item.id]?.quantity || 0;
+                  return (
+                    <div key={item.id} className="bg-[#141414] rounded-2xl overflow-hidden border border-neutral-800 hover:border-neutral-700 transition group flex flex-col h-full">
+                      
+                      <div className="relative h-48 overflow-hidden bg-neutral-900">
+                        <img 
+                          src={item.img} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        {item.weight && (
+                          <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-neutral-300">
+                            {item.weight}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 flex flex-col flex-1">
+                        <h3 className="font-bold text-lg mb-1">{item.name}</h3>
+                        <p className="text-sm text-neutral-400 line-clamp-2 mb-4 flex-1">{item.desc}</p>
+                        
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="font-bold text-lg text-white">{formatPrice(item.price)}</span>
+                          
+                          {quantityInCart === 0 ? (
+                            <button 
+                              onClick={() => addToCart(item)}
+                              className="bg-[#e63946] hover:bg-red-700 text-white w-10 h-10 flex items-center justify-center rounded-lg transition-colors"
+                            >
+                              <Plus size={20} />
+                            </button>
+                          ) : (
+                            <div className="flex items-center bg-[#1f1f1f] rounded-lg border border-neutral-700">
+                              <button 
+                                onClick={() => removeFromCart(item.id)}
+                                className="w-10 h-10 flex items-center justify-center text-neutral-300 hover:text-white"
+                              >
+                                <Minus size={18} />
+                              </button>
+                              <span className="font-bold text-sm w-6 text-center">{quantityInCart}</span>
+                              <button 
+                                onClick={() => addToCart(item)}
+                                className="w-10 h-10 flex items-center justify-center text-[#e63946] hover:text-red-400"
+                              >
+                                <Plus size={18} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full py-10 text-center text-neutral-500">
+                  Ushbu bo'limda hozircha taomlar yo'q
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Floating Checkout Button (Mobile uchun qulay) */}
+          {cartItemsCount > 0 && activePage === 'menu' && (
+            <div className="fixed bottom-6 left-0 right-0 px-4 md:hidden z-30">
+              <button 
+                onClick={() => setActivePage('checkout')}
+                className="w-full bg-[#e63946] text-white rounded-xl p-4 flex items-center justify-between shadow-lg shadow-red-900/50"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                    {cartItemsCount}
+                  </div>
+                  <span className="font-medium">Savatga o'tish</span>
+                </div>
+                <span className="font-bold text-lg">{formatPrice(cartTotal)}</span>
+              </button>
+            </div>
+          )}
+
+          {/* CSS For Scrollbar */}
+          <style dangerouslySetInnerHTML={{__html: `
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          `}} />
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<SushiBarApp />);
+  </script>
+</body>
+</html>
