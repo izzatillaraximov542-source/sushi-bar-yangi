@@ -232,7 +232,32 @@ app.post('/api/menu', (req, res) => {
   res.status(201).json(newItem);
 });
 
-// 6. Delete Menu Item
+// 6. Edit Menu Item
+app.put('/api/menu/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const { name, category, price, weight, desc, img } = req.body;
+  const data = readData();
+
+  const index = data.menuItems.findIndex(item => item.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Taom topilmadi." });
+  }
+
+  data.menuItems[index] = {
+    ...data.menuItems[index],
+    ...(name !== undefined && { name }),
+    ...(category !== undefined && { category }),
+    ...(price !== undefined && { price: Number(price) }),
+    ...(weight !== undefined && { weight }),
+    ...(desc !== undefined && { desc }),
+    ...(img !== undefined && { img }),
+  };
+
+  writeData(data);
+  res.json(data.menuItems[index]);
+});
+
+// 7. Delete Menu Item
 app.delete('/api/menu/:id', (req, res) => {
   const id = Number(req.params.id);
   const data = readData();
