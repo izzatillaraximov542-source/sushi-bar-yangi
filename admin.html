@@ -23,7 +23,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Trash2, Save, Image as ImageIcon, Pencil, X, Lock, Eye, EyeOff, LogOut } from 'lucide-react';
+    import { Plus, Trash2, Save, Image as ImageIcon, Pencil, X } from 'lucide-react';
 
     // Image compression helper
     const compressImage = (file, callback) => {
@@ -39,124 +39,21 @@
           if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
           else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
           canvas.width = width; canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
           callback(canvas.toDataURL('image/jpeg', 0.7));
         };
       };
     };
 
-    const TOKEN_KEY = 'sushi_admin_token';
     const defaultCategories = ["Barchasi", "Roll va Sushilar", "Katta Setlar", "Issiq Taomlar", "Salatlar", "Ichimliklar"];
 
-    // ============================
-    // LOGIN COMPONENT
-    // ============================
-    function LoginScreen({ onLogin }) {
-      const [password, setPassword] = useState('');
-      const [showPassword, setShowPassword] = useState(false);
-      const [error, setError] = useState('');
-      const [loading, setLoading] = useState(false);
-
-      const handleLogin = async (e) => {
-        e.preventDefault();
-        if (!password.trim()) return;
-        setLoading(true);
-        setError('');
-        try {
-          const res = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            localStorage.setItem(TOKEN_KEY, data.token);
-            onLogin(data.token);
-          } else {
-            setError(data.error || "Parol noto'g'ri!");
-          }
-        } catch {
-          setError("Server bilan bog'lanishda xatolik.");
-        }
-        setLoading(false);
-      };
-
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-amber-900 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8">
-            {/* Logo */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Lock size={30} className="text-white" />
-              </div>
-              <h1 className="text-2xl font-black text-neutral-900">Admin Panel</h1>
-              <p className="text-sm text-neutral-500 mt-1">Sushi Bar boshqaruv tizimi</p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-neutral-500 mb-1.5 block">PAROL</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={e => { setPassword(e.target.value); setError(''); }}
-                    placeholder="Admin paroli..."
-                    className="w-full bg-neutral-100 px-4 py-3.5 pr-12 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm font-medium transition-all"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl font-medium">
-                  ❌ {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || !password.trim()}
-                className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all text-sm shadow-lg shadow-amber-500/30"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Tekshirilmoqda...
-                  </span>
-                ) : (
-                  <span>Kirish →</span>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    // ============================
-    // ADMIN PANEL COMPONENT
-    // ============================
-    function AdminPanel({ token, onLogout }) {
+    function AdminApp() {
       const [categories, setCategories] = useState(defaultCategories);
       const [menuItems, setMenuItems] = useState([]);
       const [newCategory, setNewCategory] = useState("");
       const [newItem, setNewItem] = useState({ name: "", category: "Roll va Sushilar", price: "", weight: "", desc: "", img: "" });
       const [editItem, setEditItem] = useState(null);
       const [editSaving, setEditSaving] = useState(false);
-
-      const authHeaders = { 'Content-Type': 'application/json', 'x-admin-token': token };
 
       const fetchData = async () => {
         try {
@@ -188,28 +85,43 @@
 
       const handleAddCategory = async () => {
         if (!newCategory.trim()) return;
-        const res = await fetch('/api/categories', { method: 'POST', headers: authHeaders, body: JSON.stringify({ name: newCategory.trim() }) });
+        const res = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newCategory.trim() })
+        });
         if (res.ok) { setCategories(await res.json()); setNewCategory(""); }
         else { const e = await res.json(); alert(e.error); }
       };
 
       const handleDeleteCategory = async (cat) => {
-        const res = await fetch(`/api/categories/${encodeURIComponent(cat)}`, { method: 'DELETE', headers: { 'x-admin-token': token } });
+        const res = await fetch(`/api/categories/${encodeURIComponent(cat)}`, { method: 'DELETE' });
         if (res.ok) setCategories(await res.json());
       };
 
       const handleAddItem = async () => {
         if (!newItem.name || !newItem.price) return;
         const res = await fetch('/api/menu', {
-          method: 'POST', headers: authHeaders,
-          body: JSON.stringify({ name: newItem.name, category: newItem.category, price: Number(newItem.price), weight: newItem.weight, desc: newItem.desc || "Yangi taom...", img: newItem.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80" })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newItem.name,
+            category: newItem.category,
+            price: Number(newItem.price),
+            weight: newItem.weight,
+            desc: newItem.desc || "Yangi taom...",
+            img: newItem.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"
+          })
         });
-        if (res.ok) { await fetchData(); setNewItem({ name: "", category: categories.filter(c => c !== "Barchasi")[0] || "Taomlar", price: "", weight: "", desc: "", img: "" }); }
+        if (res.ok) {
+          await fetchData();
+          setNewItem({ name: "", category: categories.filter(c => c !== "Barchasi")[0] || "Taomlar", price: "", weight: "", desc: "", img: "" });
+        }
       };
 
       const handleDeleteItem = async (id) => {
         if (!confirm("Taomni o'chirishni tasdiqlaysizmi?")) return;
-        const res = await fetch(`/api/menu/${id}`, { method: 'DELETE', headers: { 'x-admin-token': token } });
+        const res = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
         if (res.ok) await fetchData();
       };
 
@@ -217,8 +129,16 @@
         if (!editItem || !editItem.name || !editItem.price) return;
         setEditSaving(true);
         const res = await fetch(`/api/menu/${editItem.id}`, {
-          method: 'PUT', headers: authHeaders,
-          body: JSON.stringify({ name: editItem.name, category: editItem.category, price: Number(editItem.price), weight: editItem.weight, desc: editItem.desc, img: editItem.img })
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editItem.name,
+            category: editItem.category,
+            price: Number(editItem.price),
+            weight: editItem.weight,
+            desc: editItem.desc,
+            img: editItem.img
+          })
         });
         if (res.ok) { await fetchData(); setEditItem(null); }
         else alert("Saqlashda xatolik yuz berdi.");
@@ -228,7 +148,7 @@
       return (
         <div className="min-h-screen bg-neutral-50 font-sans max-w-md mx-auto shadow-2xl relative pb-20">
 
-          {/* EDIT MODAL */}
+          {/* ===== EDIT MODAL ===== */}
           {editItem && (
             <div className="fixed inset-0 z-50 flex items-end justify-center" style={{background:'rgba(0,0,0,0.5)'}}>
               <div className="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl" style={{maxHeight:'92vh', overflowY:'auto'}}>
@@ -239,6 +159,7 @@
                   </button>
                 </div>
                 <div className="space-y-3">
+                  {/* Rasm */}
                   <div className="flex items-center gap-3">
                     <img src={editItem.img} alt={editItem.name} className="w-20 h-20 rounded-xl object-cover border-2 border-neutral-200 shrink-0" />
                     <div className="flex-1 space-y-2">
@@ -251,16 +172,19 @@
                     </div>
                   </div>
 
+                  {/* Nomi */}
                   <div>
                     <label className="text-xs font-semibold text-neutral-500 mb-1 block">Taom nomi</label>
                     <input type="text" value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})} className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm font-medium" />
                   </div>
 
+                  {/* Narxi — sariq, katta */}
                   <div>
                     <label className="text-xs font-semibold text-amber-600 mb-1 block">💰 Narxi (UZS)</label>
                     <input type="number" value={editItem.price} onChange={e => setEditItem({...editItem, price: e.target.value})} className="w-full bg-amber-50 border-2 border-amber-400 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-base font-black text-amber-800" />
                   </div>
 
+                  {/* Kategoriya */}
                   <div>
                     <label className="text-xs font-semibold text-neutral-500 mb-1 block">Kategoriya</label>
                     <select value={editItem.category} onChange={e => setEditItem({...editItem, category: e.target.value})} className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm border-r-8 border-transparent">
@@ -268,17 +192,19 @@
                     </select>
                   </div>
 
+                  {/* Og'irligi */}
                   <div>
                     <label className="text-xs font-semibold text-neutral-500 mb-1 block">Og'irligi / Miqdori</label>
                     <input type="text" placeholder="masalan: 250 g / 8 dona" value={editItem.weight} onChange={e => setEditItem({...editItem, weight: e.target.value})} className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm" />
                   </div>
 
+                  {/* Ta'rifi */}
                   <div>
                     <label className="text-xs font-semibold text-neutral-500 mb-1 block">Ta'rifi</label>
                     <textarea value={editItem.desc} onChange={e => setEditItem({...editItem, desc: e.target.value})} className="w-full bg-neutral-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm min-h-[70px]" />
                   </div>
 
-                  <button onClick={handleSaveEdit} disabled={editSaving} className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-black py-3.5 rounded-xl flex justify-center items-center gap-2 transition-colors">
+                  <button onClick={handleSaveEdit} disabled={editSaving} className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-black py-3.5 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-lg shadow-amber-500/20">
                     <Save size={20} />
                     {editSaving ? "Saqlanmoqda..." : "O'zgarishlarni Saqlash"}
                   </button>
@@ -287,24 +213,18 @@
             </div>
           )}
 
-          {/* HEADER */}
+          {/* ===== HEADER ===== */}
           <div className="bg-white px-5 py-5 sticky top-0 z-20 shadow-sm flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-neutral-900 tracking-tight">Admin Panel</h1>
               <p className="text-xs text-neutral-400">Sushi Bar boshqaruvi</p>
             </div>
-            <div className="flex items-center gap-3">
-              <a href="/" className="text-sm font-bold text-amber-500 hover:text-amber-600 transition-colors">Menyu</a>
-              <button onClick={onLogout} className="flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-red-500 transition-colors bg-neutral-100 hover:bg-red-50 px-3 py-2 rounded-xl">
-                <LogOut size={15} />
-                Chiqish
-              </button>
-            </div>
+            <a href="/" className="text-sm font-bold text-amber-500 hover:text-amber-600 transition-colors">← Menyuga qaytish</a>
           </div>
 
           <div className="p-5 space-y-6">
 
-            {/* KATEGORIYALAR */}
+            {/* ===== KATEGORIYALAR ===== */}
             <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
               <h2 className="font-bold text-base mb-4 text-neutral-800">🏷️ Kategoriyalar</h2>
               <div className="flex gap-2 mb-4">
@@ -321,7 +241,7 @@
               </div>
             </div>
 
-            {/* TAOM QO'SHISH */}
+            {/* ===== TAOM QO'SHISH ===== */}
             <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
               <h2 className="font-bold text-base mb-4 text-neutral-800">➕ Yangi Taom Qo'shish</h2>
               <div className="space-y-3">
@@ -354,7 +274,7 @@
               </div>
             </div>
 
-            {/* TAOMLAR RO'YXATI */}
+            {/* ===== TAOMLAR RO'YXATI ===== */}
             <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-neutral-100">
               <h2 className="font-bold text-base mb-4 text-neutral-800">📋 Menyudagi Taomlar ({menuItems.length} ta)</h2>
               <div className="space-y-3">
@@ -366,9 +286,11 @@
                       <p className="text-xs text-amber-600 font-bold">{formatPrice(item.price)}</p>
                       <p className="text-xs text-neutral-400">{item.category}</p>
                     </div>
+                    {/* ✏️ Tahrirlash */}
                     <button onClick={() => setEditItem({ ...item })} className="text-amber-500 hover:bg-amber-50 p-2.5 rounded-xl transition-colors shrink-0 border border-amber-200" title="Tahrirlash">
                       <Pencil size={16} />
                     </button>
+                    {/* 🗑️ O'chirish */}
                     <button onClick={() => handleDeleteItem(item.id)} className="text-red-400 hover:bg-red-50 p-2.5 rounded-xl transition-colors shrink-0" title="O'chirish">
                       <Trash2 size={16} />
                     </button>
@@ -383,57 +305,8 @@
       );
     }
 
-    // ============================
-    // ROOT APP
-    // ============================
-    function App() {
-      const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-      const [verified, setVerified] = useState(false);
-      const [checking, setChecking] = useState(true);
-
-      // Sahifa ochilganda tokenni serverda tekshir
-      useEffect(() => {
-        const checkToken = async () => {
-          const saved = localStorage.getItem(TOKEN_KEY);
-          if (!saved) { setChecking(false); return; }
-          try {
-            const res = await fetch('/api/admin/verify', { headers: { 'x-admin-token': saved } });
-            if (res.ok) { setToken(saved); setVerified(true); }
-            else { localStorage.removeItem(TOKEN_KEY); setToken(null); }
-          } catch { localStorage.removeItem(TOKEN_KEY); setToken(null); }
-          setChecking(false);
-        };
-        checkToken();
-      }, []);
-
-      const handleLogin = (newToken) => {
-        setToken(newToken);
-        setVerified(true);
-      };
-
-      const handleLogout = () => {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setVerified(false);
-      };
-
-      if (checking) {
-        return (
-          <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-            <div className="text-amber-400 text-lg font-bold animate-pulse">Yuklanmoqda...</div>
-          </div>
-        );
-      }
-
-      if (!token || !verified) {
-        return <LoginScreen onLogin={handleLogin} />;
-      }
-
-      return <AdminPanel token={token} onLogout={handleLogout} />;
-    }
-
     const root = createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(<AdminApp />);
   </script>
 </body>
 </html>
