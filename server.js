@@ -6,6 +6,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
+// Admin password (o'zgartirish uchun shu yerda yangilang)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sushi2024';
+
 app.use(express.json({ limit: '10mb' })); // support base64 images
 app.use(express.static(__dirname));
 
@@ -267,11 +270,38 @@ app.delete('/api/menu/:id', (req, res) => {
   res.json({ success: true, message: "Taom muvaffaqiyatli o'chirildi." });
 });
 
-// Redirect any other route to index.html (Express 5 syntax)
+// Admin login API
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    res.json({ success: true, token: Buffer.from(ADMIN_PASSWORD).toString('base64') });
+  } else {
+    res.status(401).json({ success: false, error: "Parol noto'g'ri!" });
+  }
+});
+
+// Admin token verify
+app.get('/api/admin/verify', (req, res) => {
+  const auth = req.headers['x-admin-token'];
+  const expected = Buffer.from(ADMIN_PASSWORD).toString('base64');
+  if (auth === expected) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ ok: false });
+  }
+});
+
+// /admin route — admin.html ni serve qiladi
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// Redirect any other route to index.html
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
   console.log(`Sushi Bar server running on http://localhost:${PORT}`);
+  console.log(`Admin panel: http://localhost:${PORT}/admin`);
 });
