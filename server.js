@@ -17,131 +17,131 @@ app.use(express.static(__dirname, { index: false }));
 // Default data
 const defaultCategories = ["Barchasi", "Roll va Sushilar", "Katta Setlar", "Issiq Taomlar", "Salatlar", "Ichimliklar"];
 const defaultMenuItems = [
-  { 
-    id: 1, 
-    name: "Filadelfiya Klassik", 
-    category: "Roll va Sushilar", 
-    price: 75000, 
+  {
+    id: 1,
+    name: "Filadelfiya Klassik",
+    category: "Roll va Sushilar",
+    price: 75000,
     weight: "250 g / 8 dona",
-    desc: "Norvegiya lososi, qaymoqli pishloq, bodring, nori va guruch.", 
-    img: "sushi bar rasmlar/Дизайн без названия.png"
+    desc: "Norvegiya lososi, qaymoqli pishloq, bodring, nori va guruch.",
+    img: "https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=600&q=80"
   },
-  { 
-    id: 2, 
-    name: "Tokio Seti", 
-    category: "Katta Setlar", 
-    price: 320000, 
+  {
+    id: 2,
+    name: "Tokio Seti",
+    category: "Katta Setlar",
+    price: 320000,
     weight: "1200 g / 40 dona",
-    desc: "Eng mashhur 5 xil rollar to'plami: Filadelfiya, Kaliforniya, Alyaska, va boshqalar.", 
-    img: "sushi bar rasmlar/Дизайн без названия (2).png"
+    desc: "Eng mashhur 5 xil rollar to'plami: Filadelfiya, Kaliforniya, Alyaska, va boshqalar.",
+    img: "https://images.unsplash.com/photo-1553621042-f6e147245754?w=600&q=80"
   },
-  { 
-    id: 3, 
-    name: "Issiq Ebi Tempura", 
-    category: "Roll va Sushilar", 
-    price: 85000, 
+  {
+    id: 3,
+    name: "Issiq Ebi Tempura",
+    category: "Roll va Sushilar",
+    price: 85000,
     weight: "280 g / 8 dona",
-    desc: "Qarsildoq tempura ichida qisqichbaqa, pishloq va unagi sousi.", 
-    img: "sushi bar rasmlar/Дизайн без названия 3.png"
+    desc: "Qarsildoq tempura ichida qisqichbaqa, pishloq va unagi sousi.",
+    img: "https://images.unsplash.com/photo-1562802378-063ec186a863?w=600&q=80"
   },
-  { 
-    id: 4, 
-    name: "Chuka Salati", 
-    category: "Salatlar", 
-    price: 45000, 
+  {
+    id: 4,
+    name: "Chuka Salati",
+    category: "Salatlar",
+    price: 45000,
     weight: "150 g",
-    desc: "Dengiz o'tlari salati, yong'oqli sous va kunjut bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 4.png"
+    desc: "Dengiz o'tlari salati, yong'oqli sous va kunjut bilan.",
+    img: "https://images.unsplash.com/photo-1540648639573-8c848de23f0a?w=600&q=80"
   },
-  { 
-    id: 5, 
-    name: "Tomyam Sho'rvasi", 
-    category: "Issiq Taomlar", 
-    price: 95000, 
+  {
+    id: 5,
+    name: "Tomyam Sho'rvasi",
+    category: "Issiq Taomlar",
+    price: 95000,
     weight: "400 ml",
-    desc: "Tailandcha achchiq va nordon sho'rva dengiz mahsulotlari bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 5.png"
+    desc: "Tailandcha achchiq va nordon sho'rva dengiz mahsulotlari bilan.",
+    img: "https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=600&q=80"
   },
-  { 
-    id: 6, 
-    name: "Yaponcha Choy", 
-    category: "Ichimliklar", 
-    price: 25000, 
+  {
+    id: 6,
+    name: "Yaponcha Choy",
+    category: "Ichimliklar",
+    price: 25000,
     weight: "500 ml",
-    desc: "An'anaviy sencha ko'k choyi, limon va yalpiz bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 6.png"
+    desc: "An'anaviy sencha ko'k choyi, limon va yalpiz bilan.",
+    img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&q=80"
   },
-  { 
-    id: 7, 
-    name: "Kaliforniya Roll", 
-    category: "Roll va Sushilar", 
-    price: 70000, 
+  {
+    id: 7,
+    name: "Kaliforniya Roll",
+    category: "Roll va Sushilar",
+    price: 70000,
     weight: "240 g / 8 dona",
-    desc: "Krab go'shti, avokado, tvorog pishloq va kunjut bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 7.png"
+    desc: "Krab go'shti, avokado, tvorog pishloq va kunjut bilan.",
+    img: "https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=600&q=80"
   },
-  { 
-    id: 8, 
-    name: "Losos Nigiri", 
-    category: "Roll va Sushilar", 
-    price: 65000, 
+  {
+    id: 8,
+    name: "Losos Nigiri",
+    category: "Roll va Sushilar",
+    price: 65000,
     weight: "180 g / 6 dona",
-    desc: "Yangi losos bilan tayyorlangan an'anaviy yapon nigirilari.", 
-    img: "sushi bar rasmlar/Дизайн без названия 8.png"
+    desc: "Yangi losos bilan tayyorlangan an'anaviy yapon nigirilari.",
+    img: "https://images.unsplash.com/photo-1534482421-64566f976cfa?w=600&q=80"
   },
-  { 
-    id: 9, 
-    name: "Osaka Seti", 
-    category: "Katta Setlar", 
-    price: 450000, 
+  {
+    id: 9,
+    name: "Osaka Seti",
+    category: "Katta Setlar",
+    price: 450000,
     weight: "1800 g / 60 dona",
-    desc: "Katta ziyofat uchun premium set: 8 xil rol va nigirilar.", 
-    img: "sushi bar rasmlar/Дизайн без названия 9.png"
+    desc: "Katta ziyofat uchun premium set: 8 xil rol va nigirilar.",
+    img: "https://images.unsplash.com/photo-1559410545-0bdcd187e0a6?w=600&q=80"
   },
-  { 
-    id: 10, 
-    name: "Unagi Roll", 
-    category: "Roll va Sushilar", 
-    price: 95000, 
+  {
+    id: 10,
+    name: "Unagi Roll",
+    category: "Roll va Sushilar",
+    price: 95000,
     weight: "260 g / 8 dona",
-    desc: "Qovurilgan daryo balig'i, avokado va teriyaki sousi bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 10.png"
+    desc: "Qovurilgan daryo balig'i, avokado va teriyaki sousi bilan.",
+    img: "https://images.unsplash.com/photo-1617196034738-26c1b2b58f44?w=600&q=80"
   },
-  { 
-    id: 11, 
-    name: "Miso Sho'rva", 
-    category: "Issiq Taomlar", 
-    price: 55000, 
+  {
+    id: 11,
+    name: "Miso Sho'rva",
+    category: "Issiq Taomlar",
+    price: 55000,
     weight: "350 ml",
-    desc: "An'anaviy yapon miso sho'rvasi tofu va dengiz o'tlari bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 12.png"
+    desc: "An'anaviy yapon miso sho'rvasi tofu va dengiz o'tlari bilan.",
+    img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80"
   },
-  { 
-    id: 12, 
-    name: "Avokado Salati", 
-    category: "Salatlar", 
-    price: 55000, 
+  {
+    id: 12,
+    name: "Avokado Salati",
+    category: "Salatlar",
+    price: 55000,
     weight: "180 g",
-    desc: "Yangi avokado, pomidor, salat barglari va limon sous bilan.", 
-    img: "sushi bar rasmlar/Дизайн без названия 13.png"
+    desc: "Yangi avokado, pomidor, salat barglari va limon sous bilan.",
+    img: "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=600&q=80"
   },
-  { 
-    id: 13, 
-    name: "Sushi Premium Seti", 
-    category: "Katta Setlar", 
-    price: 580000, 
+  {
+    id: 13,
+    name: "Sushi Premium Seti",
+    category: "Katta Setlar",
+    price: 580000,
     weight: "2200 g / 72 dona",
-    desc: "Restoranimizning eng yaxshi rollari va sushilari to'plami.", 
-    img: "sushi bar rasmlar/Дизайн без названия 14.png"
+    desc: "Restoranimizning eng yaxshi rollari va sushilari to'plami.",
+    img: "https://images.unsplash.com/photo-1582450871972-ab5ca641643d?w=600&q=80"
   },
-  { 
-    id: 14, 
-    name: "Matcha Ichimlik", 
-    category: "Ichimliklar", 
-    price: 35000, 
+  {
+    id: 14,
+    name: "Matcha Ichimlik",
+    category: "Ichimliklar",
+    price: 35000,
     weight: "400 ml",
-    desc: "Sovuq yoki issiq matcha choy, sut yoki suv bilan tayyorlangan.", 
-    img: "sushi bar rasmlar/Дизайн без названия (1).png"
+    desc: "Sovuq yoki issiq matcha choy, sut yoki suv bilan tayyorlangan.",
+    img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=600&q=80"
   }
 ];
 
