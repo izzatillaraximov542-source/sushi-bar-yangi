@@ -10,7 +10,9 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sushi2024';
 
 app.use(express.json({ limit: '10mb' })); // support base64 images
-app.use(express.static(__dirname));
+
+// Static fayllar — lekin index.html avtomatik serve qilinmasligi uchun index: false
+app.use(express.static(__dirname, { index: false }));
 
 // Default data
 const defaultCategories = ["Barchasi", "Roll va Sushilar", "Katta Setlar", "Issiq Taomlar", "Salatlar", "Ichimliklar"];
@@ -291,13 +293,17 @@ app.get('/api/admin/verify', (req, res) => {
   }
 });
 
-// /admin route — admin.html ni serve qiladi
+// /admin route — admin.html ni serve qiladi (boshqa route'lardan OLDIN)
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Redirect any other route to index.html
-app.get('/{*splat}', (req, res) => {
+// Barcha boshqa route'lar — index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
